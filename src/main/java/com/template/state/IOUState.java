@@ -1,6 +1,6 @@
 package com.template.state;
 
-import com.template.contract.TemplateContract;
+import com.template.contract.IOUContract;
 import net.corda.core.contracts.ContractState;
 import net.corda.core.identity.AbstractParty;
 import java.util.Collections;
