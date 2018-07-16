@@ -10,6 +10,8 @@ import net.corda.core.identity.Party;
 
 import static net.corda.core.contracts.ContractsDSL.requireSingleCommand;
 import static net.corda.core.contracts.ContractsDSL.requireThat;
+import com.google.common.collect.ImmutableList;
+
 
 public class IOUContract implements Contract {
     // Our Create command.
@@ -32,8 +34,13 @@ public class IOUContract implements Contract {
             check.using("The lender and the borrower cannot be the same entity.", lender != borrower);
 
             // Constraints on the signers.
-            check.using("There must only be one signer.", command.getSigners().size() == 1);
-            check.using("The signer must be the lender.", command.getSigners().contains(lender.getOwningKey()));
+            //check.using("There must only be one signer.", command.getSigners().size() == 1);
+            //check.using("The signer must be the lender.", command.getSigners().contains(lender.getOwningKey()));
+
+            check.using("There must be two signers.", command.getSigners().size() == 2);
+            check.using("The borrower and lender must be signers.", command.getSigners().containsAll(
+                    ImmutableList.of(borrower.getOwningKey(), lender.getOwningKey())));
+
 
             return null;
         });

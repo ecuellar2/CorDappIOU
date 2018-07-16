@@ -9,6 +9,10 @@ import net.corda.core.identity.Party;
 import net.corda.core.transactions.SignedTransaction;
 import net.corda.core.transactions.TransactionBuilder;
 import net.corda.core.utilities.ProgressTracker;
+import com.google.common.collect.ImmutableList;
+import java.security.PublicKey;
+import java.util.List;
+
 
 @InitiatingFlow
 @StartableByRPC
@@ -37,6 +41,7 @@ public class IOUFlow extends FlowLogic<Void> {
     @Suspendable
     @Override
     public Void call() throws FlowException {
+
         // We retrieve the required identities from the network map.
         final Party me = getServiceHub().getMyInfo().getLegalIdentity();
         final Party notary = getServiceHub().getNetworkMapCache().getAnyNotary(null);
@@ -47,17 +52,25 @@ public class IOUFlow extends FlowLogic<Void> {
 
         // We add the items to the builder.
         IOUState state = new IOUState(iouValue, me, otherParty);
-        Command cmd = new Command(new IOUContract.Create(), me.getOwningKey());
+        List<PublicKey> requiredSigners = ImmutableList.of(me.getOwningKey(), otherParty.getOwningKey());
+        Command cmd = new Command(new IOUContract.Create(), requiredSigners);
         txBuilder.withItems(state, cmd);
+
 
         // Verifying the transaction.
         txBuilder.verify(getServiceHub());
 
+
         // Signing the transaction.
         final SignedTransaction signedTx = getServiceHub().signInitialTransaction(txBuilder);
 
+        // Obtaining the counterparty's signature
+        final SignedTransaction fullySignedTx = subFlow(new CollectSignaturesFlow(signedTx, CollectSignaturesFlow.Companion.tracker()));
+
+
         // Finalising the transaction.
-        subFlow(new FinalityFlow(signedTx));
+        subFlow(new FinalityFlow(fullySignedTx));
+
 
         return null;
     }
